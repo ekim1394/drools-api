@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eugene.kim</groupId>
+        <artifactId>code-repo</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>stateful-api</artifactId>
+    <name>Stateful Drools API</name>
+    <description>API implementation of a stateful drools</description>
+    <packaging>war</packaging>
+
+    <properties>
+        <jersey.version>2.23.1</jersey.version>
+        <jersey.scope>compile</jersey.scope>
+        <drools.version>7.0.0.Final</drools.version>
+    </properties>
+
+    <dependencies>
+        <!-- Include in your app to use jersey API to create REST services -->
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey.version}</version>
+            <scope>${jersey.scope}</scope>
+        </dependency>
+        <!-- Include in your app to use JSON with jersey -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey.version}</version>
+            <scope>${jersey.scope}</scope>
+        </dependency>
+        <!-- Include in your app to use multipart form data to handle POST submit -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>
+            <version>${jersey.version}</version>
+            <scope>${jersey.scope}</scope>
+        </dependency>
+        <!-- Include in your app to call a jersey service -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+            <version>${jersey.version}</version>
+            <scope>${jersey.scope}</scope>
+        </dependency>
+        <!-- Include if you need to set up a http proxy for your client -->
+        <dependency>
+            <groupId>org.glassfish.jersey.ext</groupId>
+            <artifactId>jersey-proxy-client</artifactId>
+            <version>${jersey.version}</version>
+            <scope>${jersey.scope}</scope>
+        </dependency>
+        <!-- Include if you need to set up Jersey Test Framework -->
+        <dependency>
+            <groupId>org.glassfish.jersey.test-framework</groupId>
+            <artifactId>jersey-test-framework-core</artifactId>
+            <version>${jersey.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.test-framework.providers</groupId>
+            <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
+            <version>${jersey.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.studio</groupId>
+            <artifactId>org.apache.commons.io</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>jsr311-api</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.24</version>
+        </dependency>
+        <!-- Drools -->
+        <dependency>
+            <groupId>org.kie</groupId>
+            <artifactId>kie-api</artifactId>
+            <version>${drools.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.drools</groupId>
+            <artifactId>drools-core</artifactId>
+            <version>${drools.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.drools</groupId>
+            <artifactId>drools-compiler</artifactId>
+            <version>${drools.version}</version>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>build-docker</id>
+            <properties>
+                <docker.ip>192.168.99.100</docker.ip>
+                <default.tomcat.port>8080</default.tomcat.port>
+                <forward.tomcat.port>8080</forward.tomcat.port>
+                <docker.container.name>drools_api</docker.container.name>
+            </properties>
+
+            <build>
+                <plugins>
+                    <!-- for building Docker files, use with 'mvn clean package docker:build' -->
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.18.1</version>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>${docker.container.name}:${project.version}</name>
+                                    <alias>${docker.container.name}</alias>
+                                    <!-- Configure build settings -->
+                                    <build>
+                                        <dockerFileDir>${project.basedir}/docker</dockerFileDir>
+                                        <from>tomcat:alpine</from>
+                                        <assembly>
+                                            <inline>
+                                                <files>
+                                                    <file>
+                                                        <source>
+                                                            ${project.basedir}/target/build/stateful-drools-${project.version}.war
+                                                        </source>
+                                                        <outputDirectory>webapps/</outputDirectory>
+                                                        <destName>drools.war</destName>
+                                                    </file>
+                                                </files>
+                                            </inline>
+                                        </assembly>
+                                        <tags>
+                                            <tag>latest</tag>
+                                        </tags>
+                                    </build>
+                                </image>
+                            </images>
+                        </configuration>
+
+                        <executions>
+                            <execution>
+                                <id>docker:build</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <finalName>stateful-drools-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <outputDirectory>${project.basedir}/target/build</outputDirectory>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <!--<attachClasses>true</attachClasses>-->
+                    <classesClassifier>classes</classesClassifier>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
